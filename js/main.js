@@ -136,6 +136,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  
+  const isValid = (descripcion , fecha ,monto) => {
+    // Validación de campos obligatorios
+    if (!descripcion || !fecha || isNaN(monto) || monto === 0 || monto < 0) {     
+      return false;
+        }
+        return true;
+        }
+
   // Enviar formulario
   operacionFormId.addEventListener(
     "submit",
@@ -149,6 +158,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const categoria = categoriaSelect.value;
       const fecha = fechaInput.value;
       const monto = parseFloat(montoInput.value);
+
+       // Validación de campos obligatorios
+    if (isValid(descripcion, fecha, monto) === false) {
+      Toastify({
+        text: "Descripción, fecha y monto son obligatorios.",
+        className: "error",
+        style: {
+          background: "linear-gradient(to right, #ff416c, #ff4b2b)",
+        },
+      }).showToast();
+      return;
+    }
 
       const newOperation = { id, descripcion, tipo, categoria, fecha, monto };
 
