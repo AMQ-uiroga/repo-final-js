@@ -26,7 +26,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Mostrar u ocultar modal de operación
   const toggleOperationModal = (open = false) => {
-    const modalInstance = bootstrap.Modal.getInstance(operacionModal);
+    let modalInstance = bootstrap.Modal.getInstance(operacionModal);
+    if (!modalInstance) {
+      modalInstance = new bootstrap.Modal(operacionModal);
+    }
     if (open) {
       modalInstance.show();
     } else {
@@ -50,14 +53,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Renderizar las operaciones en la tabla
+  // Renderizar las operaciones en DIV
   const renderOperations = () => {
     console.log("renderOperations");
     operacionesBody.innerHTML = "";
-
+    //operations = JSON.parse(localStorage.getItem("operations"));
+    operations = JSON.parse(localStorage.getItem("operations")) || [];
     operations.forEach((operation) => {
       const row = document.createElement("div");
-      /*row.className = "row align-items-center py-2 border-bottom";*/
+
       row.className = "row ";
       row.innerHTML = `
                     <div class="col fw-bold">${operation.descripcion}</div>
@@ -87,43 +91,49 @@ document.addEventListener("DOMContentLoaded", () => {
                     `;
       operacionesBody.appendChild(row);
     });
-
     updateBalance();
   };
 
   // Calcular y actualizar balance
-
   const updateBalance = () => {
     let ganancias = 0;
     let gastos = 0;
+    // Simulación de espera con Promise y setTimeout
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        operations.forEach((op) => {
+          console.log("operacion", op);
+          if (op.tipo === "Ganancias") {
+            ganancias += op.monto;
+          } else {
+            gastos += Math.abs(op.monto);
+          }
+        });
 
-    operations.forEach((op) => {
-      console.log("operacion", op);
-      if (op.tipo === "Ganancias") {
-        ganancias += op.monto;
-      } else {
-        gastos += Math.abs(op.monto);
-      }
+        const total = ganancias - gastos;
+
+        console.log("updateBalance", ganancias, gastos, total);
+
+        gananciasBalan.textContent = `+ $${ganancias.toFixed(2)}`;
+        gastosBalan.textContent = `- $${gastos.toFixed(2)}`;
+        totalBalan.textContent = `${total >= 0 ? "+" : ""} $${total.toFixed(
+          2
+        )}`;
+
+        // Cambiar color del total
+        if (total > 0) {
+          totalBalan.classList.remove("text-red-600");
+          totalBalan.classList.add("text-green-600");
+        } else if (total < 0) {
+          totalBalan.classList.remove("text-green-600");
+          totalBalan.classList.add("text-red-600");
+        } else {
+          totalBalan.classList.remove("text-green-600", "text-red-600");
+        }
+
+        resolve(); // Promesa resuelta después de la simulación
+      }, 1000); // 1 segundo de espera simulada
     });
-
-    const total = ganancias - gastos;
-
-    console.log("updateBalance", ganancias, gastos, total);
-
-    gananciasBalan.textContent = `+ $${ganancias.toFixed(2)}`;
-    gastosBalan.textContent = `- $${gastos.toFixed(2)}`;
-    totalBalan.textContent = `${total >= 0 ? "+" : ""} $${total.toFixed(2)}`;
-
-    // Cambiar color del total
-    if (total > 0) {
-      totalBalan.classList.remove("text-red-600");
-      totalBalan.classList.add("text-green-600");
-    } else if (total < 0) {
-      totalBalan.classList.remove("text-green-600");
-      totalBalan.classList.add("text-red-600");
-    } else {
-      totalBalan.classList.remove("text-green-600", "text-red-600");
-    }
   };
 
   // Enviar formulario
@@ -132,8 +142,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function (e) {
       console.log("Formulario enviado");
       e.preventDefault();
-
-      const id = operacionFormId.value || Date.now().toString();
+      //const id = operacionFormId.value || Date.now().toString();
+      const id = operacionformIdInput.value || Date.now().toString();
       const descripcion = descripcionInput.value;
       const tipo = tipoInput.value;
       const categoria = categoriaSelect.value;
@@ -150,11 +160,13 @@ document.addEventListener("DOMContentLoaded", () => {
         operations.push(newOperation); // Crear nueva
       }
 
+      localStorage.setItem("operations", JSON.stringify(operations));
+
       renderOperations();
       toggleOperationModal(false);
 
       Toastify({
-        text: "Agregaste una operación",
+        text: "Guardaste una operación",
         className: "info",
         style: {
           background: "linear-gradient(to right, #00b09b, #96c93d)",
@@ -174,7 +186,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const op = operations.find((op) => op.id === id);
       if (op) {
         modalTitle.textContent = "Editar Operación";
-        operacionFormId.value = op.id;
+        //operacionFormId.value = op.id;
+        operacionformIdInput.value = op.id;
         descripcionInput.value = op.descripcion;
         tipoInput.value = op.tipo;
         categoriaSelect.value = op.categoria;
@@ -183,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleOperationModal(true);
       }
     } else if (target.classList.contains("delete-btn")) {
-      console.log("Eliminar operación");
+      console.log("Eliminaste una operación");
       e.preventDefault();
       operationToDeleteId = id;
       toggleDeleteModal(true);
@@ -194,6 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
   confirmDeleteBoton.addEventListener("click", () => {
     if (operationToDeleteId) {
       operations = operations.filter((op) => op.id !== operationToDeleteId);
+      localStorage.setItem("operations", JSON.stringify(operations));
       renderOperations();
       toggleDeleteModal(false);
 
