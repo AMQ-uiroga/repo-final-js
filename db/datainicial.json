@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1755643202726",
+    "descripcion": "Sueldo Agosto",
+    "tipo": "Ganancias",
+    "categoria": "Salario",
+    "fecha": "2025-08-01",
+    "monto": 800000
+  },
+  {
+    "id": "1755643244069",
+    "descripcion": "Regalo Mamá",
+    "tipo": "Gastos",
+    "categoria": "Regalo",
+    "fecha": "2025-08-06",
+    "monto": 20000
+  },
+  {
+    "id": "1755643299812",
+    "descripcion": "Comida Amigas",
+    "tipo": "Gastos",
+    "categoria": "Comida y bebidas",
+    "fecha": "2025-08-15",
+    "monto": 10000
+  },
+  {
+    "id": "1755643370309",
+    "descripcion": "Customización de Proceso",
+    "tipo": "Ganancias",
+    "categoria": "Trabajo independiente",
+    "fecha": "2025-08-16",
+    "monto": 40000
+  },
+  {
+    "id": "1755643403221",
+    "descripcion": "Regalo Papá",
+    "tipo": "Gastos",
+    "categoria": "Regalo",
+    "fecha": "2025-08-18",
+    "monto": 20000
+  }
+]

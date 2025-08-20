@@ -1,5 +1,6 @@
-document.addEventListener("DOMContentLoaded", () => {
-  // Selección de elementos del DOM con querySelector
+document.addEventListener("DOMContentLoaded", async () => {
+
+  // Elementos del DOM con querySelector
   const operacionesBody = document.querySelector("#operaciones-body");
   const operacionFormId = document.querySelector("#operacion-form-id");
 
@@ -20,9 +21,27 @@ document.addEventListener("DOMContentLoaded", () => {
   const gastosBalan = document.querySelector("#gastos");
   const totalBalan = document.querySelector("#total");
 
-  // Estado
+  // arrays
   let operations = [];
   let operationToDeleteId = null;
+
+async function cargarDatosIniciales() {
+  operations = JSON.parse(localStorage.getItem("operations")) || [];
+  // Si no hay datos en localStorage
+  if (operations.length === 0) {
+    try {
+      const response = await fetch("./db/datainicial.json");
+      const data = await response.json();
+      operations = data;
+      localStorage.setItem("operations", JSON.stringify(operations));
+    } catch (error) { 
+       Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Error al cargar datos Iniciales de Operaciones!"
+              });      
+    }
+  }}
 
   // Mostrar u ocultar modal de operación
   const toggleOperationModal = (open = false) => {
@@ -35,9 +54,32 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       modalInstance.hide();
       operacionFormId.reset();
-      operacionformIdInput.value = ""; // Limpiar el campo ID
+      operacionformIdInput.value = ""; // limpio  ID
     }
   };
+
+  //Insert json
+  fetch("./db/categoria.json")
+    .then((response) => response.json())
+    .then((data) => {
+      categoriaSelect.innerHTML =
+        '<option value="">Seleccionar categoría</option>';
+      data.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      data.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.nombre;
+        option.textContent = item.nombre;
+        categoriaSelect.appendChild(option);
+      });
+    })
+    .catch((error) => {     
+      Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Error al cargar categorías!"
+              });
+      
+    });
 
   // Mostrar u ocultar modal de eliminación
   const toggleDeleteModal = (open = false) => {
@@ -55,43 +97,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Renderizar las operaciones en DIV
   const renderOperations = () => {
-    console.log("renderOperations");
-    operacionesBody.innerHTML = "";
-    //operations = JSON.parse(localStorage.getItem("operations"));
-    operations = JSON.parse(localStorage.getItem("operations")) || [];
-    operations.forEach((operation) => {
-      const row = document.createElement("div");
+    new Promise(async (resolve) => {
+        await cargarDatosIniciales();
+    
+        operacionesBody.innerHTML = "";
+        operations.forEach((operation) => {
+        const row = document.createElement("div");
 
-      row.className = "row ";
-      row.innerHTML = `
-                    <div class="col fw-bold">${operation.descripcion}</div>
-                    <div class="col">
-                        <span class="badge bg-light text-dark">${
-                          operation.categoria
-                        }</span>
-                    </div>
-                    <div class="col text-secondary">${operation.fecha}</div>
-                    <div class="col fw-bold ${
-                      operation.tipo === "Ganancias"
-                        ? "text-success"
-                        : "text-danger"
-                    }">
-                        ${
-                          operation.tipo === "Ganancias" ? "+" : "-"
-                        } $${Math.abs(operation.monto).toFixed(2)}
-                    </div>
-                    <div class="col text-end">
-                        <a href="#" class="edit-btn text-primary me-3" data-id="${
-                          operation.id
-                        }">Editar</a>
-                        <a href="#" class="delete-btn text-danger" data-id="${
-                          operation.id
-                        }">Eliminar</a>
-                    </div>
-                    `;
-      operacionesBody.appendChild(row);
+        row.className = "row ";
+        row.innerHTML = `
+                        <div class="col fw-bold">${operation.descripcion}</div>
+                        <div class="col">
+                            <span class="badge bg-light text-dark">${
+                            operation.categoria
+                            }</span>
+                        </div>
+                        <div class="col text-secondary">${operation.fecha}</div>
+                        <div class="col fw-bold ${
+                        operation.tipo === "Ganancias"
+                            ? "text-success"
+                            : "text-danger"
+                        }">
+                            ${
+                            operation.tipo === "Ganancias" ? "+" : "-"
+                            } $${Math.abs(operation.monto).toFixed(2)}
+                        </div>
+                        <div class="col text-end">
+                            <a href="#" class="edit-btn text-primary me-3" data-id="${
+                            operation.id
+                            }">Editar</a>
+                            <a href="#" class="delete-btn text-danger" data-id="${
+                            operation.id
+                            }">Eliminar</a>
+                        </div>
+                        `;
+        operacionesBody.appendChild(row);
+        });
+        updateBalance();
+        resolve();
     });
-    updateBalance();
   };
 
   // Calcular y actualizar balance
@@ -101,8 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Simulación de espera con Promise y setTimeout
     return new Promise((resolve) => {
       setTimeout(() => {
-        operations.forEach((op) => {
-          console.log("operacion", op);
+        operations.forEach((op) => {          
           if (op.tipo === "Ganancias") {
             ganancias += op.monto;
           } else {
@@ -112,8 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const total = ganancias - gastos;
 
-        console.log("updateBalance", ganancias, gastos, total);
-
+        //console.log("updateBalance", ganancias, gastos, total);
         gananciasBalan.textContent = `+ $${ganancias.toFixed(2)}`;
         gastosBalan.textContent = `- $${gastos.toFixed(2)}`;
         totalBalan.textContent = `${total >= 0 ? "+" : ""} $${total.toFixed(
@@ -136,20 +178,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  
-  const isValid = (descripcion , fecha ,monto) => {
+  const isValid = (descripcion, fecha, monto) => {
     // Validación de campos obligatorios
-    if (!descripcion || !fecha || isNaN(monto) || monto === 0 || monto < 0) {     
+    if (!descripcion || !fecha || isNaN(monto) || monto === 0 || monto < 0) {
       return false;
-        }
-        return true;
-        }
+    }
+    return true;
+  };
 
   // Enviar formulario
   operacionFormId.addEventListener(
     "submit",
     function (e) {
-      console.log("Formulario enviado");
+      //console.log("Formulario enviado");
       e.preventDefault();
       //const id = operacionFormId.value || Date.now().toString();
       const id = operacionformIdInput.value || Date.now().toString();
@@ -159,17 +200,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const fecha = fechaInput.value;
       const monto = parseFloat(montoInput.value);
 
-       // Validación de campos obligatorios
-    if (isValid(descripcion, fecha, monto) === false) {
-      Toastify({
-        text: "Descripción, fecha y monto son obligatorios.",
-        className: "error",
-        style: {
-          background: "linear-gradient(to right, #ff416c, #ff4b2b)",
-        },
-      }).showToast();
-      return;
-    }
+      // Validación de campos obligatorios
+      if (isValid(descripcion, fecha, monto) === false) {
+        Toastify({
+          text: "Descripción, fecha y monto son obligatorios.",
+          className: "error",
+          style: {
+            background: "linear-gradient(to right, #ff416c, #ff4b2b)",
+          },
+        }).showToast();
+        return;
+      }
 
       const newOperation = { id, descripcion, tipo, categoria, fecha, monto };
 
@@ -217,7 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleOperationModal(true);
       }
     } else if (target.classList.contains("delete-btn")) {
-      console.log("Eliminaste una operación");
+      //console.log("Eliminaste una operación");
       e.preventDefault();
       operationToDeleteId = id;
       toggleDeleteModal(true);
