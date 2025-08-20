@@ -51,3 +51,9 @@ h1 {
     height: 700px;
 }
 
+p{
+    text-align: center;
+    font-weight: bold;
+    padding: 5px;
+}
+
